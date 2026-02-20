@@ -22,5 +22,17 @@ services:
     depends_on:
       - db
 
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Truco: esto evita que el volumen local sobrescriba node_modules del contenedor
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
 volumes:
   postgres_data:

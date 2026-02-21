@@ -229,3 +229,60 @@ urlpatterns = [
     path('api-token-auth/', CustomAuthToken.as_view()),
 ]
 ```
+
+---
+
+## 5. Frontend: Tailwind CSS (Fase 4)
+
+### Comandos (ejecutar desde la raíz del repo, contra el contenedor frontend)
+```powershell
+docker compose exec frontend npm install -D tailwindcss@3 postcss autoprefixer
+docker compose exec frontend npx tailwindcss init -p
+```
+
+### `frontend/tailwind.config.js`
+Tras `npx tailwindcss init -p`, asegurar que `content` incluya los archivos donde usas clases:
+```javascript
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+```
+
+### `frontend/postcss.config.js`
+Generado por `tailwindcss init -p`. Debe quedar:
+```javascript
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+### `frontend/src/index.css`
+Agregar al inicio del archivo (o reemplazar el contenido por) las directivas de Tailwind:
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+Opcional: estilos base para body:
+```css
+@layer base {
+  body {
+    @apply min-h-screen bg-gray-50 text-gray-900;
+  }
+}
+```
+
+### Verificación
+- `npm run dev` (o levantar con `docker compose up frontend`) y usar en un componente: `className="p-4 bg-blue-500 text-white rounded-lg"`.
+- Si el bloque se ve con estilo, Tailwind está activo.

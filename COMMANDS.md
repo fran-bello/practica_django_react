@@ -108,3 +108,22 @@ docker compose exec backend python manage.py migrate
 # FASE 4: FRONTEND REACT
 # --------------------------------------------------------------------------------------
 
+# 1. Instalar Tailwind CSS (dentro del contenedor frontend)
+#    Desde la raíz del repo: ejecutar en el contenedor para que node_modules quede en /app (montado)
+docker compose exec frontend npm install -D tailwindcss@3 postcss autoprefixer
+
+# 2. Crear archivos de configuración de Tailwind y PostCSS (dentro del contenedor)
+docker compose exec frontend npx tailwindcss init -p
+#    Crea: frontend/tailwind.config.js y frontend/postcss.config.js (gracias al volumen ./frontend:/app)
+
+# 3. Configurar manualmente:
+#    - frontend/tailwind.config.js: en "content" poner ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"]
+#    - frontend/src/index.css: agregar al inicio las directivas:
+#      @tailwind base;
+#      @tailwind components;
+#      @tailwind utilities;
+
+# 4. Verificar: levantar frontend y en cualquier componente usar className="p-4 bg-blue-500 text-white"
+#    Si se ve el estilo, Tailwind está funcionando.
+#    (Opcional) npm audit: las vulnerabilidades en devDependencies suelen ser aceptables en práctica.
+

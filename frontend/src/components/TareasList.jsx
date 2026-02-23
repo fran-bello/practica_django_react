@@ -267,6 +267,33 @@ export default function TareasList({ refresh }) {
       .finally(() => setAddingSubtaskId(null));
   }
 
+  // Sugerir subtareas con IA
+  function handleSuggestSubtasks(task) {
+    // Feedback visual en el input
+    setSubtaskDraft(prev => ({ ...prev, title: "Consultando IA...", description: "..." }));
+
+    axios
+      .post(
+        getApiUrl("/api/subtasks/suggest/"), 
+        { task_id: task.id }, 
+        { headers: getAuthHeaders(token) }
+      )
+      .then((res) => {
+        const { title, description } = res.data;
+        // Rellenamos el formulario con la respuesta
+        setSubtaskDraft(prev => ({
+            ...prev,
+            title: title,
+            description: description || ""
+        }));
+      })
+      .catch((err) => {
+        console.error(err);
+        setSubtaskDraft(prev => ({ ...prev, title: "", description: "" }));
+        alert("Error al generar sugerencia.");
+      });
+  }
+
   // Pedir a la IA que categorice una tarea
   function handleCategorize(task) {
     // 1. Confirmación de seguridad
@@ -934,7 +961,7 @@ export default function TareasList({ refresh }) {
                                   title: e.target.value,
                                 }))
                               }
-                              className={`${inputClasses} max-w-[200px]`}
+                              className={`${inputClasses} flex-1 min-w-[200px]`}
                               placeholder="Título de la subtarea"
                             />
                             <input
@@ -946,7 +973,7 @@ export default function TareasList({ refresh }) {
                                   description: e.target.value,
                                 }))
                               }
-                              className={`${inputClasses} max-w-[200px]`}
+                              className={`${inputClasses} flex-1 min-w-[200px]`}
                               placeholder="Descripción (opcional)"
                             />
                             <select
@@ -988,6 +1015,14 @@ export default function TareasList({ refresh }) {
                               className="text-xs p-2 rounded-sm bg-zinc-700 text-white hover:bg-zinc-900 disabled:opacity-50"
                             >
                               {addingSubtaskId === task.id ? "…" : "Agregar"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSuggestSubtasks(task)}
+                              className="text-xs p-2 rounded-sm bg-purple-600 text-white hover:bg-purple-800 disabled:opacity-50"
+                              title="Generar subtareas automáticamente con IA"
+                            >
+                              ⚡ Sugerir
                             </button>
                             <button
                               type="button"

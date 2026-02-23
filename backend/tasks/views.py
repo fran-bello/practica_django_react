@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
 from .models import Task, Category, Subtask
 from .serializers import TaskSerializer, CategorySerializer, SubtaskSerializer
 from .ai_service import suggest_category
@@ -69,6 +70,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             }, status=200)
 
 
+
 class SubtaskViewSet(viewsets.ModelViewSet):
     serializer_class = SubtaskSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -83,6 +85,28 @@ class SubtaskViewSet(viewsets.ModelViewSet):
             raise ValidationError({"task": "Tarea no encontrada o no pertenece al usuario."})
         serializer.save(task=task)
 
+    @action(detail=False, methods=['post'])
+    def suggest(self, request):
+        """
+        Endpoint: POST /api/subtasks/suggest/
+        Body: { "task_id": <id> }
+        Devuelve { title, description } sugerido para el siguiente paso.
+        """
+        task_id = request.data.get('task_id')
+        if not task_id:
+            return Response({"error": "Falta task_id"}, status=400)
+
+        task = get_object_or_404(Task, pk=task_id, user=request.user)
+        current_subtasks = list(task.subtasks.values_list('title', flat=True))
+        
+        from .ai_service import suggest_next_subtask
+        suggestion = suggest_next_subtask(task.title, current_subtasks)
+        
+        if not suggestion:
+            return Response({"error": "No se pudo generar sugerencia."}, status=500)
+
+        # Devolvemos la sugerencia SIN crearla
+        return Response(suggestion)
 
 class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):

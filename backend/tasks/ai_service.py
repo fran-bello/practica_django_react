@@ -2,6 +2,8 @@ import os
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import JsonOutputParser
+
 
 def suggest_category(title: str, description: str, categories: list[str]) -> str:
     # 1. Preparamos la lista de categorías como un string separado por comas
@@ -41,3 +43,26 @@ def suggest_category(title: str, description: str, categories: list[str]) -> str
         # Si falla (ej. sin internet, API key inválida), devolvemos una categoría por defecto
         print(f"Error al categorizar la tarea: {e}")
         return "General"
+
+def suggest_next_subtask(task_title, existing_subtasks=[]) -> dict:
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.4) 
+
+    existing_str = ", ".join(existing_subtasks) if existing_subtasks else "Ninguna"
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "Eres un experto en gestión de proyectos."),
+        ("user", f"Tarea principal: '{task_title}'.\n"
+                 f"Subtareas ya completadas/existentes: {existing_str}.\n"
+                 "Piensa cuál es el SIGUIENTE paso lógico necesario.\n"
+                 "Responde EXCLUSIVAMENTE con un objeto JSON con dos campos: 'title' (corto y accionable) y 'description' (breve explicación).\n"
+                 "Ejemplo: {{ \"title\": \"Investigar librerías\", \"description\": \"Comparar opciones en Github\" }}")
+    ])
+
+    chain = prompt | llm | JsonOutputParser()
+
+    try:
+        response = chain.invoke({})
+        return response 
+    except Exception as e:
+        print(f"Error AI Next Subtask: {e}")
+        return None

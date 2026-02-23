@@ -22,3 +22,10 @@ coverage/
 .vscode/
 .idea/
 *.swp
+
+#MD 
+GUIDE_FILES.md
+COMMANDS.md
+
+#Componentes Examples 
+frontend/src/components/examples/

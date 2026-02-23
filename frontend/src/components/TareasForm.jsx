@@ -66,10 +66,10 @@ export default function TareasForm({ onSuccess }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-nowrap items-end gap-2 w-full py-4"
+      className="flex flex-col md:flex-row flex-wrap items-stretch md:items-end gap-3 w-full py-4"
     >
       {/* Campo Título */}
-      <div className="flex-1 min-w-0">
+      <div className="w-full md:flex-1 md:min-w-[200px]">
         <Input
           type="text"
           placeholder="Título"
@@ -80,7 +80,7 @@ export default function TareasForm({ onSuccess }) {
       </div>
 
       {/* Campo Descripción */}
-      <div className="flex-1 min-w-0">
+      <div className="w-full md:flex-1 md:min-w-[200px]">
         <Input
           type="text"
           placeholder="Descripción"
@@ -91,7 +91,7 @@ export default function TareasForm({ onSuccess }) {
       </div>
 
       {/* Select Categoría */}
-      <div className="flex-1 min-w-0 min-w-[140px]">
+      <div className="w-full md:w-auto md:min-w-[140px]">
         <select
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
@@ -108,7 +108,7 @@ export default function TareasForm({ onSuccess }) {
       </div>
 
       {/* Input Fecha Límite */}
-      <div className="min-w-0 w-[140px]">
+      <div className="w-full md:w-auto md:min-w-[140px]">
         <input
           type="date"
           value={dueDate}
@@ -122,7 +122,7 @@ export default function TareasForm({ onSuccess }) {
       <button
         type="submit"
         disabled={loading || !title.trim()}
-        className="text-sm px-4 py-3 rounded-sm bg-zinc-700 hover:bg-zinc-900 text-white disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+        className="w-full md:w-auto text-sm px-4 py-3 rounded-sm bg-zinc-700 hover:bg-zinc-900 text-white disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
       >
         {loading ? "…" : "Agregar"}
       </button>

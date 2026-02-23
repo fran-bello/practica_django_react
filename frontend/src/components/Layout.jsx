@@ -21,9 +21,10 @@ function Layout() {
         <button
           type="button"
           onClick={handleLogout}
-          className="text-sm p-3 rounded-sm bg-zinc-700 hover:bg-zinc-900 text-white outline-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-xs p-2 rounded-sm bg-zinc-700 text-white hover:bg-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-8 h-8"
+          title="Cerrar sesión"
         >
-          Cerrar sesión
+          <i className="pi pi-sign-out"></i>
         </button>
       </header>
       <main>

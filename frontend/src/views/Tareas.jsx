@@ -8,7 +8,7 @@ function Tareas() {
 
     return (
         // Contenedor principal centrado
-        <div className="flex flex-col items-center w-full max-w-6xl mx-auto">
+        <div className="flex flex-col items-center w-full max-w-6xl mx-auto px-4 md:px-0">
             <h2 className="text-base font-bold mt-4">Agregar Tarea</h2>
             
             {/* 

@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { getApiUrl, getAuthHeaders } from "../api/client";
+import { formatDate, toInputDate } from "../utils/dateUtils";
 
 // =========================================================================
 // ESTILOS COMUNES (Tailwind classes)
@@ -12,56 +13,37 @@ const selectClasses =
   "w-full text-sm px-2 py-1 border border-gray-300 rounded outline-blue-200 outline-1 bg-white min-w-0";
 
 const buttonClasses =
+  "text-xs p-2 rounded-sm bg-zinc-700 text-white hover:bg-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-8 h-8";
+const textButtonClasses =
   "text-xs p-2 rounded-sm bg-zinc-700 text-white hover:bg-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed";
 const buttonDeleteClasses =
-  "text-xs p-2 rounded-sm bg-red-400 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed";
-
-// =========================================================================
-// HELPERS (Formato de fechas)
-// =========================================================================
-function formatDate(value) {
-  if (!value) return "—";
-  // Asegura compatibilidad si la fecha viene sin hora (YYYY-MM-DD)
-  const d = value.includes("T")
-    ? new Date(value)
-    : new Date(value + "T00:00:00");
-  return d.toLocaleDateString("es-ES", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
-function toInputDate(value) {
-  if (!value) return "";
-  // Convierte ISO string a YYYY-MM-DD para el input type="date"
-  return value.includes("T") ? value.slice(0, 10) : value;
-}
+  "text-xs p-2 rounded-sm bg-red-400 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-8 h-8";
 
 // =========================================================================
 // COMPONENTE PRINCIPAL
 // =========================================================================
 export default function TareasList({ refresh }) {
   const { token } = useAuth();
-  
+
   // --- ESTADOS DE DATOS ---
-  const [tasks, setTasks] = useState([]);         // Lista principal de tareas
+  const [tasks, setTasks] = useState([]); // Lista principal de tareas
   const [categories, setCategories] = useState([]); // Lista de categorías para selects
-  const [loading, setLoading] = useState(true);     // Spinner inicial
+  const [loading, setLoading] = useState(true); // Spinner inicial
 
   // --- ESTADOS DE INTERFAZ (UI) ---
   const [togglingId, setTogglingId] = useState(null); // ID de tarea siendo marcada (loading checkbox)
   const [deletingId, setDeletingId] = useState(null); // ID de tarea siendo eliminada
-  const [savingId, setSavingId] = useState(null);     // ID de tarea siendo guardada (edit)
+  const [savingId, setSavingId] = useState(null); // ID de tarea siendo guardada (edit)
 
   // --- ESTADOS DE EDICIÓN DE TAREA ---
-  const [editingId, setEditingId] = useState(null);   // Qué tarea se está editando
-  const [editDraft, setEditDraft] = useState(null);   // Copia temporal de los datos para editar
-  const [editError, setEditError] = useState(null);   // Error de validación en edición
+  const [editingId, setEditingId] = useState(null); // Qué tarea se está editando
+  const [editDraft, setEditDraft] = useState(null); // Copia temporal de los datos para editar
+  const [editError, setEditError] = useState(null); // Error de validación en edición
 
   // --- ESTADOS DE CREACIÓN DE SUBTAREA ---
   const [addSubtaskTaskId, setAddSubtaskTaskId] = useState(null); // ID de tarea padre a la que se agrega subtarea
-  const [subtaskDraft, setSubtaskDraft] = useState({  // Formulario temporal de nueva subtarea
+  const [subtaskDraft, setSubtaskDraft] = useState({
+    // Formulario temporal de nueva subtarea
     title: "",
     description: "",
     due_date: "",
@@ -86,7 +68,7 @@ export default function TareasList({ refresh }) {
   // =======================================================================
   // CARGA DE DATOS
   // =======================================================================
-  
+
   function fetchTasks() {
     if (!token) return;
     setLoading(true);
@@ -143,9 +125,9 @@ export default function TareasList({ refresh }) {
           ),
         ),
       )
-      .finally(() => 
+      .finally(() =>
         // 4. Desbloqueamos el checkbox
-        setTogglingId(null)
+        setTogglingId(null),
       );
   }
 
@@ -257,8 +239,8 @@ export default function TareasList({ refresh }) {
         setTasks((prev) =>
           prev.map((t) =>
             t.id === task.id
-              // Agregamos la nueva subtarea al array 'subtasks' de la tarea padre
-              ? { ...t, subtasks: [...(t.subtasks || []), res.data] }
+              ? // Agregamos la nueva subtarea al array 'subtasks' de la tarea padre
+                { ...t, subtasks: [...(t.subtasks || []), res.data] }
               : t,
           ),
         ),
@@ -270,26 +252,30 @@ export default function TareasList({ refresh }) {
   // Sugerir subtareas con IA
   function handleSuggestSubtasks(task) {
     // Feedback visual en el input
-    setSubtaskDraft(prev => ({ ...prev, title: "Consultando IA...", description: "..." }));
+    setSubtaskDraft((prev) => ({
+      ...prev,
+      title: "Consultando IA...",
+      description: "...",
+    }));
 
     axios
       .post(
-        getApiUrl("/api/subtasks/suggest/"), 
-        { task_id: task.id }, 
-        { headers: getAuthHeaders(token) }
+        getApiUrl("/api/subtasks/suggest/"),
+        { task_id: task.id },
+        { headers: getAuthHeaders(token) },
       )
       .then((res) => {
         const { title, description } = res.data;
         // Rellenamos el formulario con la respuesta
-        setSubtaskDraft(prev => ({
-            ...prev,
-            title: title,
-            description: description || ""
+        setSubtaskDraft((prev) => ({
+          ...prev,
+          title: title,
+          description: description || "",
         }));
       })
       .catch((err) => {
         console.error(err);
-        setSubtaskDraft(prev => ({ ...prev, title: "", description: "" }));
+        setSubtaskDraft((prev) => ({ ...prev, title: "", description: "" }));
         alert("Error al generar sugerencia.");
       });
   }
@@ -297,28 +283,34 @@ export default function TareasList({ refresh }) {
   // Pedir a la IA que categorice una tarea
   function handleCategorize(task) {
     // 1. Confirmación de seguridad
-    if (!window.confirm(`¿Pedir a la IA que categorice "${task.title}"?`)) return;
-    
+    if (!window.confirm(`¿Pedir a la IA que categorice "${task.title}"?`))
+      return;
+
     // 2. Feedback visual (cambiamos el cursor a "esperando")
-    document.body.style.cursor = "wait"; 
+    document.body.style.cursor = "wait";
 
     // 3. Llamada al endpoint que creamos en Django
     axios
-      .post(getApiUrl(`/api/tasks/${task.id}/categorize/`), {}, {
-        headers: getAuthHeaders(token),
-      })
+      .post(
+        getApiUrl(`/api/tasks/${task.id}/categorize/`),
+        {},
+        {
+          headers: getAuthHeaders(token),
+        },
+      )
       .then((res) => {
         // 4. Éxito: Mostramos qué decidió la IA
         const { message } = res.data;
-        alert(message); 
-        
+        alert(message);
+
         // 5. Recargamos la tabla para que aparezca la nueva categoría
         // (Usamos la referencia que explicamos antes)
         if (refresh?.current) refresh.current();
       })
       .catch((err) => {
         console.error(err);
-        const errorMsg = err.response?.data?.error || "Error al consultar la IA";
+        const errorMsg =
+          err.response?.data?.error || "Error al consultar la IA";
         alert(errorMsg);
       })
       .finally(() => {
@@ -437,7 +429,7 @@ export default function TareasList({ refresh }) {
   // =======================================================================
   // LÓGICA DE FILTRADO Y ORDENAMIENTO (Cliente)
   // =======================================================================
-  
+
   const displayedTasks = [...tasks]
     .filter((task) => {
       // Filtro Completadas
@@ -516,19 +508,19 @@ export default function TareasList({ refresh }) {
   return (
     <div className="w-full">
       {/* BARRA DE FILTROS */}
-      <div className="flex flex-wrap items-center gap-3 mb-3 p-3 bg-gray-50 rounded border border-gray-200">
+      <div className="flex flex-row flex-wrap items-center gap-3 mb-3 p-3 bg-gray-50 rounded border border-gray-200">
         <input
           type="text"
           value={filterSearch}
           onChange={(e) => setFilterSearch(e.target.value)}
           placeholder="Buscar en título o descripción"
-          className={`${inputClasses} max-w-[220px] mb-0`}
+          className={`${inputClasses} w-full md:w-auto md:max-w-[220px] mb-0`}
         />
         <select
           value={filterCompleted}
           onChange={(e) => setFilterCompleted(e.target.value)}
-          className={selectClasses}
-          style={{ width: "auto", minWidth: "140px" }}
+          className={`${selectClasses} w-[calc(50%-0.4rem)] md:w-auto`}
+          style={{ minWidth: "140px" }}
         >
           <option value="">Todas</option>
           <option value="false">Pendientes</option>
@@ -537,8 +529,8 @@ export default function TareasList({ refresh }) {
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
-          className={selectClasses}
-          style={{ width: "auto", minWidth: "140px" }}
+          className={`${selectClasses} w-[calc(50%-0.4rem)] md:w-auto`}
+          style={{ minWidth: "140px" }}
         >
           <option value="">Todas las categorías</option>
           {categories.map((cat) => (
@@ -550,7 +542,7 @@ export default function TareasList({ refresh }) {
         <button
           type="button"
           onClick={clearFilters}
-          className={buttonClasses}
+          className={`${textButtonClasses} w-full md:w-auto text-center whitespace-nowrap flex-shrink-0`}
         >
           Limpiar filtros
         </button>
@@ -558,8 +550,8 @@ export default function TareasList({ refresh }) {
 
       {/* TABLA PRINCIPAL */}
       <div className="overflow-x-auto rounded border border-gray-200">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-gray-100 text-gray-600">
+        <table className="w-full text-left text-sm block md:table">
+          <thead className="bg-gray-100 text-gray-600 hidden md:table-header-group">
             <tr>
               <th className="w-10 px-3 py-2 text-xs">
                 <button
@@ -606,15 +598,15 @@ export default function TareasList({ refresh }) {
                   Fecha <SortIcon col="due_date" />
                 </button>
               </th>
-              <th className="px-3 py-2 text-xs min-w-[200px]">Acciones</th>
+              <th className="px-3 py-2 text-xs min-w-[160px]">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-200 block md:table-row-group">
             {displayedTasks.length === 0 ? (
-              <tr>
+              <tr className="block md:table-row">
                 <td
                   colSpan={6}
-                  className="px-3 py-4 text-center text-gray-500 text-sm"
+                  className="px-3 py-4 text-center text-gray-500 text-sm flex md:table-cell"
                 >
                   Ninguna tarea coincide con los filtros.
                 </td>
@@ -628,13 +620,17 @@ export default function TareasList({ refresh }) {
                     {/* FILA DE TAREA PADRE */}
                     <tr
                       className={
-                        task.completed
+                        (task.completed
                           ? "bg-gray-50 opacity-80"
-                          : "hover:bg-gray-50"
+                          : "hover:bg-gray-50") +
+                        " block md:table-row mb-4 md:mb-0 border md:border-none shadow md:shadow-none rounded md:rounded-none bg-white relative"
                       }
                     >
                       {/* Checkbox Completado */}
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2 border-b md:border-none flex justify-between items-center md:table-cell bg-gray-50 md:bg-transparent">
+                        <span className="md:hidden font-bold text-gray-500 text-xs uppercase">
+                          Estado
+                        </span>
                         <button
                           type="button"
                           onClick={() => handleToggleCompleted(task)}
@@ -649,309 +645,399 @@ export default function TareasList({ refresh }) {
                         </button>
                       </td>
                       {/* Título (Editable) */}
-                      <td className="px-3 py-2">
-                        {isEditing ? (
-                          <div>
-                            <input
-                              type="text"
-                              value={draft?.title ?? ""}
-                              onChange={(e) =>
-                                updateDraft("title", e.target.value)
+                      <td className="px-3 py-2 border-b md:border-none flex justify-between items-center md:table-cell">
+                        <span className="md:hidden font-bold text-gray-500 text-xs uppercase mr-2">
+                          Tarea
+                        </span>
+                        <div className="flex-1 md:flex-none w-full md:w-auto text-right md:text-left">
+                          {isEditing ? (
+                            <div>
+                              <input
+                                type="text"
+                                value={draft?.title ?? ""}
+                                onChange={(e) =>
+                                  updateDraft("title", e.target.value)
+                                }
+                                className={`${inputClasses} ${editError ? "border-red-500" : ""}`}
+                                placeholder="Título"
+                                aria-invalid={!!editError}
+                              />
+                              {editError && (
+                                <p className="text-red-600 text-xs mt-0.5">
+                                  {editError}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <span
+                              className={
+                                task.completed
+                                  ? "line-through text-gray-500"
+                                  : "font-medium text-gray-900"
                               }
-                              className={`${inputClasses} ${editError ? "border-red-500" : ""}`}
-                              placeholder="Título"
-                              aria-invalid={!!editError}
-                            />
-                            {editError && (
-                              <p className="text-red-600 text-xs mt-0.5">
-                                {editError}
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <span
-                            className={
-                              task.completed
-                                ? "line-through text-gray-500"
-                                : "font-medium text-gray-900"
-                            }
-                          >
-                            {task.title}
-                          </span>
-                        )}
+                            >
+                              {task.title}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       {/* Descripción */}
-                      <td className="px-3 py-2">
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            value={draft?.description ?? ""}
-                            onChange={(e) =>
-                              updateDraft("description", e.target.value)
-                            }
-                            className={inputClasses}
-                            placeholder="Descripción"
-                          />
-                        ) : (
-                          <span className="text-gray-600 max-w-xs truncate block">
-                            {task.description || "—"}
-                          </span>
-                        )}
+                      <td className="px-3 py-2 border-b md:border-none flex justify-between items-center md:table-cell">
+                        <span className="md:hidden font-bold text-gray-500 text-xs uppercase mr-2">
+                          Desc.
+                        </span>
+                        <div className="flex-1 md:flex-none w-full md:w-auto text-right md:text-left">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={draft?.description ?? ""}
+                              onChange={(e) =>
+                                updateDraft("description", e.target.value)
+                              }
+                              className={inputClasses}
+                              placeholder="Descripción"
+                            />
+                          ) : (
+                            <span className="text-gray-600 max-w-md truncate block ml-auto md:ml-0">
+                              {task.description || "—"}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       {/* Categoría */}
-                      <td className="px-3 py-2">
-                        {isEditing ? (
-                          <select
-                            value={draft?.category ?? ""}
-                            onChange={(e) =>
-                              updateDraft("category", e.target.value)
-                            }
-                            className={selectClasses}
-                          >
-                            <option value="">Sin categoría</option>
-                            {categories.map((cat) => (
-                              <option key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          <span className="text-gray-500">
-                            {task.category_name || "—"}
-                          </span>
-                        )}
+                      <td className="px-3 py-2 border-b md:border-none flex justify-between items-center md:table-cell">
+                        <span className="md:hidden font-bold text-gray-500 text-xs uppercase mr-2">
+                          Categ.
+                        </span>
+                        <div className="flex-1 md:flex-none w-full md:w-auto text-right md:text-left">
+                          {isEditing ? (
+                            <select
+                              value={draft?.category ?? ""}
+                              onChange={(e) =>
+                                updateDraft("category", e.target.value)
+                              }
+                              className={selectClasses}
+                            >
+                              <option value="">Sin categoría</option>
+                              {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>
+                                  {cat.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-gray-500">
+                              {task.category_name || "—"}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       {/* Fecha */}
-                      <td className="px-3 py-2">
-                        {isEditing ? (
-                          <input
-                            type="date"
-                            value={draft?.due_date ?? ""}
-                            onChange={(e) =>
-                              updateDraft("due_date", e.target.value)
-                            }
-                            className={inputClasses}
-                          />
-                        ) : (
-                          <span className="text-gray-500 whitespace-nowrap">
-                            {formatDate(task.due_date || task.created_at)}
-                          </span>
-                        )}
+                      <td className="px-3 py-2 border-b md:border-none flex justify-between items-center md:table-cell">
+                        <span className="md:hidden font-bold text-gray-500 text-xs uppercase mr-2">
+                          Fecha
+                        </span>
+                        <div className="flex-1 md:flex-none w-full md:w-auto text-right md:text-left">
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              value={draft?.due_date ?? ""}
+                              onChange={(e) =>
+                                updateDraft("due_date", e.target.value)
+                              }
+                              className={inputClasses}
+                            />
+                          ) : (
+                            <span className="text-gray-500 whitespace-nowrap">
+                              {formatDate(task.due_date || task.created_at)}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       {/* Botones de Acción */}
-                      <td className="px-3 py-2">
-                        {isEditing ? (
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={saveEdit}
-                              disabled={
-                                savingId === task.id || !draft?.title?.trim()
-                              }
-                              className="text-xs p-2 rounded-sm bg-green-600 text-white hover:bg-green-800"
-                            >
-                              {savingId === task.id ? "…" : "Guardar"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelEdit}
-                              disabled={savingId === task.id}
-                              className={buttonClasses}
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex gap-1 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => startEdit(task)}
-                              className={buttonClasses}
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => startAddSubtask(task)}
-                              disabled={addSubtaskTaskId != null}
-                              className="text-xs p-2 rounded-sm bg-zinc-700 text-white hover:bg-zinc-900 disabled:opacity-50"
-                            >
-                              + subtarea
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleCategorize(task)}
-                              className={buttonClasses}
-                              title="Categorizar con IA (próximamente)"
-                            >
-                              Categorizar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(task)}
-                              disabled={deletingId === task.id}
-                              className={buttonDeleteClasses}
-                            >
-                              {deletingId === task.id ? "…" : "Eliminar"}
-                            </button>
-                          </div>
-                        )}
+                      <td className="px-3 py-2 border-b md:border-none flex justify-between items-center md:table-cell bg-gray-50 md:bg-transparent">
+                        <span className="md:hidden font-bold text-gray-500 text-xs uppercase">
+                          Acciones
+                        </span>
+                        <div className="flex justify-end md:justify-start w-full md:w-auto">
+                          {isEditing ? (
+                            <div className="flex gap-1 justify-end md:justify-start">
+                              <button
+                                type="button"
+                                onClick={saveEdit}
+                                disabled={
+                                  savingId === task.id || !draft?.title?.trim()
+                                }
+                                className="text-xs p-2 rounded-sm bg-green-600 text-white hover:bg-green-800 flex items-center justify-center w-8 h-8"
+                                title="Guardar"
+                              >
+                                {savingId === task.id ? (
+                                  <i className="pi pi-spin pi-spinner"></i>
+                                ) : (
+                                  <i className="pi pi-check"></i>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelEdit}
+                                disabled={savingId === task.id}
+                                className={buttonClasses}
+                                title="Cancelar"
+                              >
+                                <i className="pi pi-times"></i>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-1 justify-end md:justify-start">
+                              <button
+                                type="button"
+                                onClick={() => startEdit(task)}
+                                className={buttonClasses}
+                                title="Editar"
+                              >
+                                <i className="pi pi-pencil"></i>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => startAddSubtask(task)}
+                                disabled={addSubtaskTaskId != null}
+                                className="text-xs p-2 rounded-sm bg-zinc-700 text-white hover:bg-zinc-900 disabled:opacity-50 flex items-center justify-center w-8 h-8"
+                                title="Agregar Subtarea"
+                              >
+                                <i className="pi pi-plus"></i>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCategorize(task)}
+                                className={buttonClasses}
+                                title="Categorizar con IA (próximamente)"
+                              >
+                                <i className="pi pi-sparkles"></i>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(task)}
+                                disabled={deletingId === task.id}
+                                className={buttonDeleteClasses}
+                                title="Eliminar"
+                              >
+                                {deletingId === task.id ? (
+                                  <i className="pi pi-spin pi-spinner"></i>
+                                ) : (
+                                  <i className="pi pi-trash"></i>
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
-                    
+
                     {/* FILAS DE SUBTAREAS */}
                     {(task.subtasks || []).map((st) => {
                       const isEditingSt = editingSubtaskId === st.id;
                       const draftSt = isEditingSt ? editSubtaskDraft : null;
                       return (
-                        <tr key={st.id} className="bg-gray-50/80">
-                          <td className="px-3 py-1.5 w-10">
+                        <tr
+                          key={st.id}
+                          className="bg-gray-50/80 block md:table-row border-b md:border-none pl-4 md:pl-0 border-l-4 border-l-gray-300 md:border-l-0 mb-4 md:mb-0"
+                        >
+                          <td className="px-3 py-1.5 w-full md:w-10 border-b md:border-none flex justify-between items-center md:table-cell">
+                            <span className="md:hidden font-bold text-gray-500 text-xs uppercase">
+                              Estado
+                            </span>
                             <button
                               type="button"
                               onClick={() =>
                                 handleToggleSubtaskCompleted(st, task)
                               }
                               disabled={togglingSubtaskId === st.id}
-                              className="ml-5 bg-white w-5 h-5 p-0 rounded border border-gray-400 flex items-center justify-center disabled:opacity-50"
+                              className="md:ml-5 bg-white w-5 h-5 p-0 rounded border border-gray-400 flex items-center justify-center disabled:opacity-50"
                             >
                               {st.completed ? "✓" : ""}
                             </button>
                           </td>
-                          <td className="px-3 py-1.5 pl-8">
-                            {isEditingSt ? (
-                              <input
-                                type="text"
-                                value={draftSt?.title ?? ""}
-                                onChange={(e) =>
-                                  updateSubtaskDraft("title", e.target.value)
-                                }
-                                className={`${inputClasses} max-w-[180px]`}
-                                placeholder="Título"
-                              />
-                            ) : (
-                              <span
-                                className={
-                                  st.completed
-                                    ? "line-through text-gray-500"
-                                    : "text-gray-600"
-                                }
-                              >
-                                {st.title}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-1.5">
-                            {isEditingSt ? (
-                              <input
-                                type="text"
-                                value={draftSt?.description ?? ""}
-                                onChange={(e) =>
-                                  updateSubtaskDraft(
-                                    "description",
-                                    e.target.value,
-                                  )
-                                }
-                                className={`${inputClasses} max-w-[180px]`}
-                                placeholder="Descripción"
-                              />
-                            ) : (
-                              <span className="text-gray-500 max-w-xs truncate block">
-                                {st.description || "—"}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-1.5">
-                            {isEditingSt ? (
-                              <select
-                                value={draftSt?.category ?? ""}
-                                onChange={(e) =>
-                                  updateSubtaskDraft("category", e.target.value)
-                                }
-                                className={`${selectClasses} max-w-[120px]`}
-                              >
-                                <option value="">Sin categoría</option>
-                                {categories.map((cat) => (
-                                  <option key={cat.id} value={cat.id}>
-                                    {cat.name}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="text-gray-500">
-                                {st.category_name || "—"}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-1.5">
-                            {isEditingSt ? (
-                              <input
-                                type="date"
-                                value={draftSt?.due_date ?? ""}
-                                onChange={(e) =>
-                                  updateSubtaskDraft("due_date", e.target.value)
-                                }
-                                className={`${inputClasses} max-w-[140px]`}
-                              />
-                            ) : (
-                              <span className="text-gray-500 whitespace-nowrap">
-                                {formatDate(st.due_date || st.created_at)}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-1.5">
-                            {isEditingSt ? (
-                              <div className="flex gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => saveSubtaskEdit(st, task)}
-                                  disabled={
-                                    savingSubtaskId === st.id ||
-                                    !draftSt?.title?.trim()
+                          <td className="px-3 py-1.5 pl-8 border-b md:border-none flex justify-between items-center md:table-cell">
+                            <span className="md:hidden font-bold text-gray-500 text-xs uppercase mr-2">
+                              Subtarea
+                            </span>
+                            <div className="flex-1 md:flex-none w-full md:w-auto text-right md:text-left">
+                              {isEditingSt ? (
+                                <input
+                                  type="text"
+                                  value={draftSt?.title ?? ""}
+                                  onChange={(e) =>
+                                    updateSubtaskDraft("title", e.target.value)
                                   }
-                                  className="text-xs p-2 rounded-sm bg-green-600 text-white hover:bg-green-800 disabled:opacity-50"
+                                  className={`${inputClasses} md:max-w-[180px]`}
+                                  placeholder="Título"
+                                />
+                              ) : (
+                                <span
+                                  className={
+                                    st.completed
+                                      ? "line-through text-gray-500"
+                                      : "text-gray-600"
+                                  }
                                 >
-                                  {savingSubtaskId === st.id ? "…" : "Guardar"}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={cancelEditSubtask}
-                                  disabled={savingSubtaskId === st.id}
-                                  className={buttonClasses}
+                                  {st.title}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-1.5 border-b md:border-none flex justify-between items-center md:table-cell">
+                            <span className="md:hidden font-bold text-gray-500 text-xs uppercase mr-2">
+                              Desc.
+                            </span>
+                            <div className="flex-1 md:flex-none w-full md:w-auto text-right md:text-left">
+                              {isEditingSt ? (
+                                <input
+                                  type="text"
+                                  value={draftSt?.description ?? ""}
+                                  onChange={(e) =>
+                                    updateSubtaskDraft(
+                                      "description",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className={`${inputClasses} md:max-w-[180px]`}
+                                  placeholder="Descripción"
+                                />
+                              ) : (
+                                <span className="text-gray-500 max-w-md truncate block ml-auto md:ml-0">
+                                  {st.description || "—"}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-1.5 border-b md:border-none flex justify-between items-center md:table-cell">
+                            <span className="md:hidden font-bold text-gray-500 text-xs uppercase mr-2">
+                              Categ.
+                            </span>
+                            <div className="flex-1 md:flex-none w-full md:w-auto text-right md:text-left">
+                              {isEditingSt ? (
+                                <select
+                                  value={draftSt?.category ?? ""}
+                                  onChange={(e) =>
+                                    updateSubtaskDraft(
+                                      "category",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className={`${selectClasses} md:max-w-[120px]`}
                                 >
-                                  Cancelar
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => startEditSubtask(st)}
-                                  className={buttonClasses}
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteSubtask(st, task)}
-                                  disabled={deletingSubtaskId === st.id}
-                                  className={buttonDeleteClasses}
-                                >
-                                  {deletingSubtaskId === st.id
-                                    ? "…"
-                                    : "Eliminar"}
-                                </button>
-                              </div>
-                            )}
+                                  <option value="">Sin categoría</option>
+                                  {categories.map((cat) => (
+                                    <option key={cat.id} value={cat.id}>
+                                      {cat.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-gray-500">
+                                  {st.category_name || "—"}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-1.5 border-b md:border-none flex justify-between items-center md:table-cell">
+                            <span className="md:hidden font-bold text-gray-500 text-xs uppercase mr-2">
+                              Fecha
+                            </span>
+                            <div className="flex-1 md:flex-none w-full md:w-auto text-right md:text-left">
+                              {isEditingSt ? (
+                                <input
+                                  type="date"
+                                  value={draftSt?.due_date ?? ""}
+                                  onChange={(e) =>
+                                    updateSubtaskDraft(
+                                      "due_date",
+                                      e.target.value,
+                                    )
+                                  }
+                                  className={`${inputClasses} md:max-w-[140px]`}
+                                />
+                              ) : (
+                                <span className="text-gray-500 whitespace-nowrap">
+                                  {formatDate(st.due_date || st.created_at)}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-1.5 border-b md:border-none flex justify-between items-center md:table-cell bg-gray-100 md:bg-transparent">
+                            <span className="md:hidden font-bold text-gray-500 text-xs uppercase">
+                              Acciones
+                            </span>
+                            <div className="flex justify-end md:justify-start w-full md:w-auto">
+                              {isEditingSt ? (
+                                <div className="flex gap-1 justify-end md:justify-start">
+                                  <button
+                                    type="button"
+                                    onClick={() => saveSubtaskEdit(st, task)}
+                                    disabled={
+                                      savingSubtaskId === st.id ||
+                                      !draftSt?.title?.trim()
+                                    }
+                                    className="text-xs p-2 rounded-sm bg-green-600 text-white hover:bg-green-800 disabled:opacity-50 flex items-center justify-center w-8 h-8"
+                                    title="Guardar"
+                                  >
+                                    {savingSubtaskId === st.id ? (
+                                      <i className="pi pi-spin pi-spinner"></i>
+                                    ) : (
+                                      <i className="pi pi-check"></i>
+                                    )}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={cancelEditSubtask}
+                                    disabled={savingSubtaskId === st.id}
+                                    className={buttonClasses}
+                                    title="Cancelar"
+                                  >
+                                    <i className="pi pi-times"></i>
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex gap-1 justify-end md:justify-start">
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditSubtask(st)}
+                                    className={buttonClasses}
+                                    title="Editar"
+                                  >
+                                    <i className="pi pi-pencil"></i>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleDeleteSubtask(st, task)
+                                    }
+                                    disabled={deletingSubtaskId === st.id}
+                                    className={buttonDeleteClasses}
+                                    title="Eliminar"
+                                  >
+                                    {deletingSubtaskId === st.id ? (
+                                      <i className="pi pi-spin pi-spinner"></i>
+                                    ) : (
+                                      <i className="pi pi-trash"></i>
+                                    )}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
                     })}
-                    
+
                     {/* FORMULARIO AGREGAR SUBTAREA (INLINE) */}
                     {addSubtaskTaskId === task.id && (
-                      <tr className="bg-blue-50/50">
-                        <td colSpan={6} className="px-3 py-2">
-                          <div className="flex flex-wrap items-center gap-2">
+                      <tr className="bg-blue-50/50 block md:table-row border-b md:border-none pl-4 md:pl-0 border-l-4 border-l-blue-300 md:border-l-0 mb-4 md:mb-0">
+                        <td colSpan={6} className="px-3 py-2 md:table-cell">
+                          <div className="md:hidden font-bold text-gray-500 text-xs uppercase mb-2">
+                            Nueva Subtarea
+                          </div>
+                          <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-2">
                             <input
                               type="text"
                               value={subtaskDraft.title}
@@ -964,74 +1050,84 @@ export default function TareasList({ refresh }) {
                               className={`${inputClasses} flex-1 min-w-[200px]`}
                               placeholder="Título de la subtarea"
                             />
-                            <input
-                              type="text"
-                              value={subtaskDraft.description}
-                              onChange={(e) =>
-                                setSubtaskDraft((p) => ({
-                                  ...p,
-                                  description: e.target.value,
-                                }))
-                              }
-                              className={`${inputClasses} flex-1 min-w-[200px]`}
-                              placeholder="Descripción (opcional)"
-                            />
-                            <select
-                              value={subtaskDraft.category}
-                              onChange={(e) =>
-                                setSubtaskDraft((p) => ({
-                                  ...p,
-                                  category: e.target.value,
-                                }))
-                              }
-                              className={`${selectClasses} max-w-[140px]`}
-                            >
-                              <option value="">Sin categoría</option>
-                              {categories.map((cat) => (
-                                <option key={cat.id} value={cat.id}>
-                                  {cat.name}
-                                </option>
-                              ))}
-                            </select>
-                            <input
-                              type="date"
-                              value={subtaskDraft.due_date}
-                              onChange={(e) =>
-                                setSubtaskDraft((p) => ({
-                                  ...p,
-                                  due_date: e.target.value,
-                                }))
-                              }
-                              className={`${inputClasses} max-w-[140px]`}
-                              aria-label="Fecha"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleAddSubtask(task)}
-                              disabled={
-                                addingSubtaskId === task.id ||
-                                !subtaskDraft.title?.trim()
-                              }
-                              className="text-xs p-2 rounded-sm bg-zinc-700 text-white hover:bg-zinc-900 disabled:opacity-50"
-                            >
-                              {addingSubtaskId === task.id ? "…" : "Agregar"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSuggestSubtasks(task)}
-                              className="text-xs p-2 rounded-sm bg-purple-600 text-white hover:bg-purple-800 disabled:opacity-50"
-                              title="Generar subtareas automáticamente con IA"
-                            >
-                              ⚡ Sugerir
-                            </button>
-                            <button
-                              type="button"
-                              onClick={cancelAddSubtask}
-                              disabled={addingSubtaskId === task.id}
-                              className={buttonClasses}
-                            >
-                              Cancelar
-                            </button>
+                            <div className="flex flex-col md:flex-row gap-2 flex-1">
+                              <input
+                                type="text"
+                                value={subtaskDraft.description}
+                                onChange={(e) =>
+                                  setSubtaskDraft((p) => ({
+                                    ...p,
+                                    description: e.target.value,
+                                  }))
+                                }
+                                className={`${inputClasses} flex-1 min-w-[200px]`}
+                                placeholder="Descripción (opcional)"
+                              />
+                              <select
+                                value={subtaskDraft.category}
+                                onChange={(e) =>
+                                  setSubtaskDraft((p) => ({
+                                    ...p,
+                                    category: e.target.value,
+                                  }))
+                                }
+                                className={`${selectClasses} w-full md:max-w-[140px]`}
+                              >
+                                <option value="">Sin categoría</option>
+                                {categories.map((cat) => (
+                                  <option key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <input
+                                type="date"
+                                value={subtaskDraft.due_date}
+                                onChange={(e) =>
+                                  setSubtaskDraft((p) => ({
+                                    ...p,
+                                    due_date: e.target.value,
+                                  }))
+                                }
+                                className={`${inputClasses} w-full md:max-w-[140px]`}
+                                aria-label="Fecha"
+                              />
+                            </div>
+                            <div className="flex gap-1 justify-end md:justify-start">
+                              <button
+                                type="button"
+                                onClick={() => handleAddSubtask(task)}
+                                disabled={
+                                  addingSubtaskId === task.id ||
+                                  !subtaskDraft.title?.trim()
+                                }
+                                className="text-xs p-2 rounded-sm bg-zinc-700 text-white hover:bg-zinc-900 disabled:opacity-50 flex items-center justify-center w-8 h-8"
+                                title="Agregar"
+                              >
+                                {addingSubtaskId === task.id ? (
+                                  <i className="pi pi-spin pi-spinner"></i>
+                                ) : (
+                                  <i className="pi pi-plus"></i>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSuggestSubtasks(task)}
+                                className="text-xs p-2 rounded-sm bg-purple-600 text-white hover:bg-purple-800 disabled:opacity-50 flex items-center justify-center w-8 h-8"
+                                title="Generar subtareas automáticamente con IA"
+                              >
+                                <i className="pi pi-bolt"></i>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={cancelAddSubtask}
+                                disabled={addingSubtaskId === task.id}
+                                className={buttonClasses}
+                                title="Cancelar"
+                              >
+                                <i className="pi pi-times"></i>
+                              </button>
+                            </div>
                           </div>
                         </td>
                       </tr>

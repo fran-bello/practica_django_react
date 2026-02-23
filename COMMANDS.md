@@ -141,3 +141,42 @@ docker compose exec frontend npx tailwindcss init -p
 # 2. Integración
 #    - frontend/src/views/Tareas.jsx: Usa TareasList actualizado.
 #    - frontend/src/components/index.js: Exporta los componentes actualizados.
+
+# --------------------------------------------------------------------------------------
+# EJECUTAR COMANDOS DENTRO DE LOS CONTENEDORES DOCKER
+# --------------------------------------------------------------------------------------
+# Siempre desde la raíz del proyecto (donde está docker-compose.yml).
+
+# --- BACKEND (Django) ---
+# Cualquier comando de manage.py:
+docker compose exec backend python manage.py <comando>
+
+# Ejemplos:
+docker compose exec backend python manage.py test                    # Todas las pruebas
+docker compose exec backend python manage.py test tasks              # Solo app tasks
+docker compose exec backend python manage.py test tasks.tests.TaskViewSetTests.test_create_task_assigns_authenticated_user
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py makemigrations
+docker compose exec backend python manage.py createsuperuser
+docker compose exec backend python manage.py shell
+
+# --- FRONTEND (Node/React) ---
+# Cualquier comando npm:
+docker compose exec frontend npm <comando>
+
+# Ejemplos:
+docker compose exec frontend npm run test                            # Pruebas unitarias (Vitest)
+docker compose exec frontend npm run test:watch                      # Pruebas en modo watch
+docker compose exec frontend npm install                             # Instalar dependencias
+docker compose exec frontend npm run build
+docker compose exec frontend npm run lint
+
+# --- BASE DE DATOS (Postgres) ---
+# Conectar a la consola de PostgreSQL (opcional):
+docker compose exec db psql -U $env:DB_USER -d $env:DB_NAME
+# En CMD: docker compose exec db psql -U %DB_USER% -d %DB_NAME%
+
+# --- RESUMEN RÁPIDO ---
+# Backend:  docker compose exec backend python manage.py <comando>
+# Frontend: docker compose exec frontend npm run <script>
+# DB:       docker compose exec db psql -U <user> -d <dbname>

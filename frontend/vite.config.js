@@ -4,6 +4,10 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    globals: true,
+  },
   server: {
     watch: {
       usePolling: true, // Necesario en Docker (Windows): el contenedor no recibe eventos de cambio del host

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
-from .models import Task, Category, Profile
+from .models import Task, Category, Profile, Subtask
 
 # 1. Definimos un "Inline" para editar el Perfil dentro del Usuario
 class ProfileInline(admin.StackedInline):
@@ -22,11 +22,15 @@ admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 
 # Decorador @admin.register: Es la forma moderna de decirle a Django "usa esta clase para administrar el modelo Task"
+class SubtaskInline(admin.TabularInline):
+    model = Subtask
+    extra = 0
+
+
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    # list_display: Qué columnas ver en la tabla principal del admin.
-    # En lugar de ver solo "Task object (1)", verás el título, usuario, etc.
-    list_display = ('title', 'user', 'category', 'completed', 'created_at')
+    inlines = (SubtaskInline,)
+    list_display = ('title', 'user', 'category', 'completed', 'due_date', 'created_at')
     
     # list_filter: Agrega una barra lateral derecha para filtrar datos rápidamente.
     # Podrás hacer clic en "Completed: Yes" o elegir una categoría específica.
@@ -36,8 +40,16 @@ class TaskAdmin(admin.ModelAdmin):
     # Buscará texto dentro del título O la descripción.
     search_fields = ('title', 'description')
 
-# Repetimos lo mismo para Category, pero más simple
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    # Solo mostramos el nombre y cuándo se creó
     list_display = ('name', 'created_at')
+    search_fields = ('name',)
+
+
+@admin.register(Subtask)
+class SubtaskAdmin(admin.ModelAdmin):
+    list_display = ('title', 'task', 'category', 'completed', 'due_date', 'created_at')
+    list_filter = ('completed', 'category')
+    search_fields = ('title', 'description')
+    list_select_related = ('task', 'category')
+    autocomplete_fields = ('task', 'category')

@@ -1,11 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import TaskViewSet, CategoryViewSet
+from .views import TaskViewSet, CategoryViewSet, SubtaskViewSet
 
 router = DefaultRouter()
-# Agregamos basename='task' porque TaskViewSet no tiene queryset estático
 router.register(r'tasks', TaskViewSet, basename='task')
 router.register(r'categories', CategoryViewSet)
+router.register(r'subtasks', SubtaskViewSet, basename='subtask')
 
 # URLS de la API
 urlpatterns = [

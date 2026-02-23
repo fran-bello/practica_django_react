@@ -127,3 +127,17 @@ docker compose exec frontend npx tailwindcss init -p
 #    Si se ve el estilo, Tailwind está funcionando.
 #    (Opcional) npm audit: las vulnerabilidades en devDependencies suelen ser aceptables en práctica.
 
+# --------------------------------------------------------------------------------------
+# FASE 5: MEJORAS UI Y FUNCIONALIDAD TAREAS
+# --------------------------------------------------------------------------------------
+
+# 1. Actualización de Componentes de Lista
+#    - frontend/src/components/TareasList.jsx: Se expandió la funcionalidad para incluir:
+#      - Tabla HTML estilizada con Tailwind.
+#      - Subtareas anidadas (expandibles/editables inline).
+#      - Filtros (Estado, Categoría, Búsqueda).
+#      - Ordenamiento por columnas (headers clickeables sin saltos de línea).
+
+# 2. Integración
+#    - frontend/src/views/Tareas.jsx: Usa TareasList actualizado.
+#    - frontend/src/components/index.js: Exporta los componentes actualizados.

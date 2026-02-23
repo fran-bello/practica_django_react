@@ -3,7 +3,7 @@ const baseClasses =
 
 function Input({ className = "", error, ...props }) {
   return (
-    <div className="w-full mb-3">
+    <div className="w-full">
       <input
         className={`${baseClasses} ${error ? "border-red-500" : ""} ${className}`.trim()}
         aria-invalid={!!error}

@@ -1,6 +1,6 @@
-# GUÍA DE ARCHIVOS A CREAR Y MODIFICAR (BACKEND)
+# GUÍA DE ARCHIVOS A CREAR Y MODIFICAR (BACKEND Y FRONTEND)
 
-Esta guía detalla, archivo por archivo, qué debes crear o modificar para levantar el backend desde cero.
+Esta guía detalla, archivo por archivo, qué debes crear o modificar para levantar el proyecto desde cero. Además, explica la arquitectura y lógica de negocio para que puedas replicar este patrón en otros proyectos.
 
 ## 1. Configuración Inicial (Fase 0 y 1)
 
@@ -139,6 +139,16 @@ class Task(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
     ai_classification = models.CharField(max_length=50, blank=True, null=True)
+    due_date = models.DateTimeField(blank=True, null=True) # Agregado recientemente
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Subtask(models.Model): # Agregado recientemente
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    completed = models.BooleanField(default=False)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    due_date = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 ```
 
@@ -150,139 +160,122 @@ class Task(models.Model):
 Transformación de datos (Model -> JSON).
 ```python
 from rest_framework import serializers
-from .models import Task, Category
+from .models import Task, Category, Subtask
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['id', 'name']
 
+class SubtaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subtask
+        fields = '__all__'
+
 class TaskSerializer(serializers.ModelSerializer):
     category_name = serializers.ReadOnlyField(source='category.name')
+    subtasks = SubtaskSerializer(many=True, read_only=True) # Incluye subtareas anidadas
     
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'completed', 'category', 'category_name', 'created_at']
+        fields = ['id', 'title', 'description', 'completed', 'category', 'category_name', 'due_date', 'subtasks', 'created_at']
         read_only_fields = ['created_at']
 ```
 
 ### `backend/tasks/views.py`
 Lógica de negocio (Controladores).
+Se añadieron ViewSets para Subtasks.
 ```python
-from rest_framework import viewsets, permissions
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
-from rest_framework.response import Response
-from django.contrib.auth.models import User
-from .models import Task, Category
-from .serializers import TaskSerializer, CategorySerializer
+# ... imports ...
+from .models import Task, Category, Subtask
+from .serializers import TaskSerializer, CategorySerializer, SubtaskSerializer
 
-class CategoryViewSet(viewsets.ModelViewSet):
-    queryset = Category.objects.all()
-    serializer_class = CategorySerializer
+class SubtaskViewSet(viewsets.ModelViewSet):
+    serializer_class = SubtaskSerializer
     permission_classes = [permissions.IsAuthenticated]
-
-class TaskViewSet(viewsets.ModelViewSet):
-    serializer_class = TaskSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
     def get_queryset(self):
-        # Filtra tareas por el usuario logueado
-        return Task.objects.filter(user=self.request.user).order_by('-created_at')
+        return Subtask.objects.filter(task__user=self.request.user)
+    # ... perform_create similar a Task ...
 
-    def perform_create(self, serializer):
-        # Asigna el usuario logueado al crear
-        serializer.save(user=self.request.user)
-
-class CustomAuthToken(ObtainAuthToken):
-    def post(self, request, *args, **kwargs):
-        # Lógica de login con email en vez de username
-        # ... (ver código completo en proyecto)
-```
-
-### `backend/tasks/urls.py`
-Rutas internas de la app.
-```python
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import TaskViewSet, CategoryViewSet
-
-router = DefaultRouter()
-router.register(r'tasks', TaskViewSet, basename='task')
-router.register(r'categories', CategoryViewSet)
-
-urlpatterns = [
-    path('', include(router.urls)),
-]
-```
-
-### `backend/config/urls.py`
-Rutas principales del proyecto.
-```python
-from django.contrib import admin
-from django.urls import path, include
-from tasks.views import CustomAuthToken
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include('tasks.urls')),
-    path('api-token-auth/', CustomAuthToken.as_view()),
-]
+# ... TaskViewSet y CategoryViewSet ...
 ```
 
 ---
 
-## 5. Frontend: Tailwind CSS (Fase 4)
+## 5. Frontend: Configuración Básica (Fase 4)
 
-### Comandos (ejecutar desde la raíz del repo, contra el contenedor frontend)
-```powershell
-docker compose exec frontend npm install -D tailwindcss@3 postcss autoprefixer
-docker compose exec frontend npx tailwindcss init -p
-```
-
-### `frontend/tailwind.config.js`
-Tras `npx tailwindcss init -p`, asegurar que `content` incluya los archivos donde usas clases:
-```javascript
-/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {},
+### `frontend/package.json`
+Dependencias clave.
+```json
+{
+  "dependencies": {
+    "axios": "^1.7.9",
+    "react": "^19.2.0",
+    "react-router-dom": "^7.13.0"
   },
-  plugins: [],
-}
-```
-
-### `frontend/postcss.config.js`
-Generado por `tailwindcss init -p`. Debe quedar:
-```javascript
-export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}
-```
-
-### `frontend/src/index.css`
-Agregar al inicio del archivo (o reemplazar el contenido por) las directivas de Tailwind:
-```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
-Opcional: estilos base para body:
-```css
-@layer base {
-  body {
-    @apply min-h-screen bg-gray-50 text-gray-900;
+  "devDependencies": {
+    "tailwindcss": "^3.4.19",
+    # ...
   }
 }
 ```
 
-### Verificación
-- `npm run dev` (o levantar con `docker compose up frontend`) y usar en un componente: `className="p-4 bg-blue-500 text-white rounded-lg"`.
-- Si el bloque se ve con estilo, Tailwind está activo.
+---
+
+## 6. Arquitectura Frontend y Lógica de Negocio (PASO A PASO PARA REPLICAR)
+
+Esta sección explica cómo está construida la lógica del frontend para que puedas usarla como plantilla con cualquier otra entidad (ej. Productos, Usuarios, Pedidos).
+
+### A. Gestión de Autenticación (`src/context/AuthContext.jsx`)
+Usamos React Context API + `localStorage` para manejar la sesión globalmente.
+
+1.  **Estado (`initialState`)**: Guarda el `token` y el `email` del usuario.
+2.  **Reducer (`authReducer`)**: Maneja acciones predecibles:
+    - `LOGIN`: Guarda token/email en estado.
+    - `LOGOUT`: Limpia el estado.
+    - `INIT`: Carga datos desde `localStorage` al iniciar la app.
+3.  **Persistencia (`useEffect`)**:
+    - Al cargar (`[]`), lee `localStorage` y dispara `INIT`.
+    - Al cambiar el estado (`[state.token]`), guarda o borra en `localStorage`.
+4.  **Uso (`useAuth`)**: Hook personalizado que expone `{ token, isAuthenticated, dispatch }` a cualquier componente.
+
+### B. Cliente API Centralizado (`src/api/client.js`)
+Evita repetir URLs y headers en cada llamada.
+
+1.  `getApiUrl(path)`: Concatena la URL base (ej. `http://localhost:8000`) con el path relativo.
+2.  `getAuthHeaders(token)`: Devuelve `{ Authorization: "Token ..." }` si existe el token.
+
+### C. Patrón de Lista de Datos (`src/components/TareasList.jsx`)
+Este componente implementa un CRUD completo en una sola vista. Para replicarlo con otra entidad (ej. "Productos"):
+
+1.  **Estado Local**:
+    - `data`: Array principal (ej. `tasks`).
+    - `auxData`: Datos relacionados (ej. `categories` para selects).
+    - `loading`: Booleano para mostrar spinners.
+    - `filters`: Estados para inputs de búsqueda/filtros.
+    - `drafts`: Objetos temporales para edición/creación (ej. `editDraft`).
+
+2.  **Carga de Datos (`useEffect`)**:
+    - Llama a `axios.get` usando `getApiUrl` y `getAuthHeaders(token)`.
+    - Guarda la respuesta en `data`.
+    - Maneja errores (ej. setea array vacío).
+
+3.  **Filtrado y Ordenamiento (Cliente)**:
+    - No recargues la API para filtrar si tienes pocos datos (<1000).
+    - Usa `displayedTasks = tasks.filter(...).sort(...)` en el render.
+    - Filtros: Coincidencia de texto (`includes`), comparación exacta (IDs), rangos.
+
+4.  **Operaciones CRUD (Patrón Optimista)**:
+    - **Crear**: POST a API -> Al éxito, agregar respuesta al estado: `setTasks([...prev, res.data])`.
+    - **Editar**: PATCH a API -> Al éxito, mapear estado: `setTasks(prev => prev.map(t => t.id === id ? res.data : t))`.
+    - **Eliminar**: DELETE a API -> Al éxito, filtrar estado: `setTasks(prev => prev.filter(t => t.id !== id))`.
+
+5.  **Sub-listas (Relaciones 1:N)**:
+    - Si tu entidad tiene hijos (ej. Tarea -> Subtareas), manéjalos como un array dentro del objeto padre.
+    - Al actualizar un hijo, busca el padre en el estado y actualiza su array `subtasks`.
+
+### D. Integración en Vistas (`src/views/Tareas.jsx`)
+La vista actúa como contenedor "inteligente":
+1.  Verifica autenticación (vía rutas protegidas en `App.jsx`).
+2.  Renderiza el formulario de creación (`TareasForm`) y la lista (`TareasList`).
+3.  **Comunicación entre componentes**: Usa una referencia (`useRef`) pasada como prop (`refresh`) para que el Formulario pueda decirle a la Lista que recargue los datos tras una creación exitosa.

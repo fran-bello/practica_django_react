@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User # Importamos el modelo de Usuario que ya viene en Django
+from .ai_service import suggest_category
+from rest_framework.decorators import action
 
 # Tabla Category (Categorías de tareas)
 class Category(models.Model):
@@ -43,10 +45,29 @@ class Task(models.Model):
     
     # Fecha de creación automática
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # Fecha límite / recordatorio (para usar como agenda)
+    due_date = models.DateField(null=True, blank=True)
 
     # Representación: "Comprar pan (juanperez)"
     def __str__(self):
         return f"{self.title} ({self.user.username})"
+
+
+# Subtareas (relacionadas 1 N con Task)
+class Subtask(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='subtasks')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    completed = models.BooleanField(default=False)
+    category = models.ForeignKey(
+        Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='subtasks'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    due_date = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.title} (subtask de {self.task_id})"
 
 # ... (imports)
 

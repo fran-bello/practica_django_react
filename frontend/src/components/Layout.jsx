@@ -1,22 +1,27 @@
-import { Outlet, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import Logo from "../assets/logo.png";
 
 function Layout() {
-  const navigate = useNavigate()
-  const { dispatch } = useAuth()
+  const navigate = useNavigate();
+  const { dispatch } = useAuth();
 
   function handleLogout() {
-    dispatch({ type: 'LOGOUT' })
-    navigate('/', { replace: true })
+    dispatch({ type: "LOGOUT" });
+    navigate("/", { replace: true });
   }
 
   return (
-    <div>
-      <header className="flex justify-end items-center gap-4 p-4 border-b border-gray-200 bg-neutral-50">
+    <div className="w-screen h-screen">
+      <header className="flex justify-between items-center gap-4 py-3 px-6 border-b border-gray-200 bg-neutral-50">
+        <div className="flex items-center gap-2">
+          <img src={Logo} alt="Logo" className="h-auto w-24" />
+          <h2 className="text-base font-bold ml-2">Gestor de Tareas</h2>
+        </div>
         <button
           type="button"
           onClick={handleLogout}
-          className="text-sm px-3 py-1.5 rounded border border-gray-400 hover:bg-gray-100"
+          className="text-sm p-3 rounded-sm bg-zinc-700 hover:bg-zinc-900 text-white outline-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cerrar sesión
         </button>
@@ -25,7 +30,7 @@ function Layout() {
         <Outlet />
       </main>
     </div>
-  )
+  );
 }
 
-export default Layout
+export default Layout;
